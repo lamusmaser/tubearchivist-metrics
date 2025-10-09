@@ -23,3 +23,22 @@ Setup pre-commit for linting:
 ```bash
 pre-commit install
 ```
+
+## Build container and release
+Test building your container:
+```
+docker buildx build --load -t bbilly1/tubearchivist-metrics .
+```
+
+To test the multi arch container is building, run:
+
+```
+docker buildx build --platform linux/amd64,linux/arm64 -t bbilly1/tubearchivist-metrics .
+```
+
+To release:
+
+- Create a git tag
+- Push the tag
+- Create a Release on [Github](https://github.com/tubearchivist/tubearchivist-metrics/releases/new)
+- Then the webhook will trigger to build and push a new container to [docker hub](https://hub.docker.com/r/bbilly1/tubearchivist-metrics).
