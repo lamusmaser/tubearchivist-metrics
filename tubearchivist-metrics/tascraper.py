@@ -2,6 +2,7 @@ import json
 from time import sleep
 
 import requests
+
 from environment import AppConfig
 
 """
@@ -46,7 +47,7 @@ class APIWrapper:
         try:
             # print(ta_url + index_name)
             # print(keyvalue)
-            # print("-------------------------------------------------------")
+            # print("-----------------------------------------------")
 
             getjson = requests.get(
                 ta_url + index_name, headers=headers, timeout=30
