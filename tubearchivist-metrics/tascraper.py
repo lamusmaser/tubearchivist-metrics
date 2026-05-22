@@ -2,7 +2,6 @@ import json
 from time import sleep
 
 import requests
-
 from environment import AppConfig
 
 """
