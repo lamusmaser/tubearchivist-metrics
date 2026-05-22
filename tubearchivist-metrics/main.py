@@ -119,12 +119,12 @@ class AppMetrics:
         )
         self.pending_shorts.set(
             GetMetrics.count(
-                index_name="/api/stats/download/", keyvalue="shorts"
+                index_name="/api/stats/download/", keyvalue="pending_shorts"
             )
         )
         self.pending_streams.set(
             GetMetrics.count(
-                index_name="/api/stats/download/", keyvalue="streams"
+                index_name="/api/stats/download/", keyvalue="pending_streams"
             )
         )
         # Matching 3 for the above commented lines

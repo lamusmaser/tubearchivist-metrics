@@ -46,12 +46,15 @@ class APIWrapper:
         try:
             print(f"URL: {ta_url + index_name}")
             print(f"Query params: {keyvalue}")
+            print(f"Headers: {headers}")
 
             getjson = requests.get(
                 ta_url + index_name,
                 headers=headers,
                 timeout=30,
             )
+
+            print(f"Status Code: {getjson.status_code}")
 
             # Check for HTTP errors
             getjson.raise_for_status()
@@ -64,6 +67,10 @@ class APIWrapper:
 
         except requests.exceptions.RequestException as e:
             print(f"Request error from {ta_url}{index_name}: {e}")
+            try:
+                print(f"Response body: {getjson.text}")
+            except Exception:
+                pass
         except (KeyError, ValueError) as e:
             print(
                 f"Error parsing response from {ta_url}{index_name} "
