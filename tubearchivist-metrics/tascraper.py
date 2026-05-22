@@ -69,8 +69,8 @@ class APIWrapper:
             print(f"Request error from {ta_url}{index_name}: {e}")
             try:
                 print(f"Response body: {getjson.text}")
-            except Exception:
-                pass
+            except (AttributeError, NameError) as debug_error:
+                print(f"Could not retrieve response body: {debug_error}")
         except (KeyError, ValueError) as e:
             print(
                 f"Error parsing response from {ta_url}{index_name} "
