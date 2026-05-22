@@ -178,113 +178,69 @@ class AppMetrics:
     def retrieve_metrics(self):
         """
         Retrieves the metrics from the database and updates the metrics.
+        Makes one request per endpoint and extracts all associated metrics.
         """
 
         print("Obtaining Metrics from API")
 
-        # Define metric configurations to eliminate duplication
-        metrics_config = [
-            # Download stats
-            (self.pending_downloads, "/api/stats/download/", "pending"),
-            (self.ignore_downloads, "/api/stats/download/", "ignore"),
-            (self.pending_videos, "/api/stats/download/", "pending_videos"),
-            (self.pending_shorts, "/api/stats/download/", "pending_shorts"),
-            (self.pending_streams, "/api/stats/download/", "pending_streams"),
-            # Video stats
-            (self.videos_total, "/api/stats/video/", "doc_count"),
-            (self.videos_media_size, "/api/stats/video/", "media_size"),
-            (self.videos_duration, "/api/stats/video/", "duration"),
-            # Channel stats
-            (self.channel_total, "/api/stats/channel/", "doc_count"),
-            (self.channel_active, "/api/stats/channel/", "active_true"),
-            (self.channel_inactive, "/api/stats/channel/", "active_false"),
-            (
-                self.channel_subscribed,
-                "/api/stats/channel/",
-                "subscribed_true",
-            ),
-            (
-                self.channel_unsubscribed,
-                "/api/stats/channel/",
-                "subscribed_false",
-            ),
-            # Playlist stats
-            (self.playlists_total, "/api/stats/playlist/", "doc_count"),
-            (self.playlists_active, "/api/stats/playlist/", "active_true"),
-            (self.playlists_inactive, "/api/stats/playlist/", "active_false"),
-            (
-                self.playlists_subscribed,
-                "/api/stats/playlist/",
-                "subscribed_true",
-            ),
-            (
-                self.playlists_unsubscribed,
-                "/api/stats/playlist/",
-                "subscribed_false",
-            ),
-        ]
+        # Define metrics grouped by endpoint to minimize requests
+        endpoints_map = {
+            "/api/stats/download/": {
+                "pending": self.pending_downloads,
+                "ignore": self.ignore_downloads,
+                "pending_videos": self.pending_videos,
+                "pending_shorts": self.pending_shorts,
+                "pending_streams": self.pending_streams,
+            },
+            "/api/stats/video/": {
+                "doc_count": self.videos_total,
+                "media_size": self.videos_media_size,
+                "duration": self.videos_duration,
+                "type_videos.doc_count": self.videos_type_videos_count,
+                "type_videos.media_size": self.videos_type_videos_media_size,
+                "type_videos.duration": self.videos_type_videos_duration,
+                "type_shorts.doc_count": self.videos_type_shorts_count,
+                "type_shorts.media_size": self.videos_type_shorts_media_size,
+                "type_shorts.duration": self.videos_type_shorts_duration,
+                "type_streams.doc_count": self.videos_type_streams_count,
+                "type_streams.media_size": self.videos_type_streams_media_size,
+                "type_streams.duration": self.videos_type_streams_duration,
+                "active_true.doc_count": self.videos_active_true_count,
+                "active_true.media_size": self.videos_active_true_media_size,
+                "active_true.duration": self.videos_active_true_duration,
+                "active_false.doc_count": self.videos_active_false_count,
+                "active_false.media_size": self.videos_active_false_media_size,
+                "active_false.duration": self.videos_active_false_duration,
+            },
+            "/api/stats/channel/": {
+                "doc_count": self.channel_total,
+                "active_true": self.channel_active,
+                "active_false": self.channel_inactive,
+                "subscribed_true": self.channel_subscribed,
+                "subscribed_false": self.channel_unsubscribed,
+            },
+            "/api/stats/playlist/": {
+                "doc_count": self.playlists_total,
+                "active_true": self.playlists_active,
+                "active_false": self.playlists_inactive,
+                "subscribed_true": self.playlists_subscribed,
+                "subscribed_false": self.playlists_unsubscribed,
+            },
+        }
 
-        for gauge, endpoint, key in metrics_config:
-            gauge.set(GetMetrics.count(index_name=endpoint, keyvalue=key))
+        api_wrapper = GetMetrics.get_wrapper()
 
-        # Handle nested video stats
-        video_stats = GetMetrics.count(
-            index_name="/api/stats/video/", keyvalue=None
-        )
-        if video_stats:
-            if "type_videos" in video_stats:
-                self.videos_type_videos_count.set(
-                    video_stats["type_videos"].get("doc_count", 0)
-                )
-                self.videos_type_videos_media_size.set(
-                    video_stats["type_videos"].get("media_size", 0)
-                )
-                self.videos_type_videos_duration.set(
-                    video_stats["type_videos"].get("duration", 0)
-                )
-            if "type_shorts" in video_stats:
-                self.videos_type_shorts_count.set(
-                    video_stats["type_shorts"].get("doc_count", 0)
-                )
-                self.videos_type_shorts_media_size.set(
-                    video_stats["type_shorts"].get("media_size", 0)
-                )
-                self.videos_type_shorts_duration.set(
-                    video_stats["type_shorts"].get("duration", 0)
-                )
-            if "type_streams" in video_stats:
-                self.videos_type_streams_count.set(
-                    video_stats["type_streams"].get("doc_count", 0)
-                )
-                self.videos_type_streams_media_size.set(
-                    video_stats["type_streams"].get("media_size", 0)
-                )
-                self.videos_type_streams_duration.set(
-                    video_stats["type_streams"].get("duration", 0)
-                )
-            if "active_true" in video_stats:
-                self.videos_active_true_count.set(
-                    video_stats["active_true"].get("doc_count", 0)
-                )
-                self.videos_active_true_media_size.set(
-                    video_stats["active_true"].get("media_size", 0)
-                )
-                self.videos_active_true_duration.set(
-                    video_stats["active_true"].get("duration", 0)
-                )
-            if "active_false" in video_stats:
-                self.videos_active_false_count.set(
-                    video_stats["active_false"].get("doc_count", 0)
-                )
-                self.videos_active_false_media_size.set(
-                    video_stats["active_false"].get("media_size", 0)
-                )
-                self.videos_active_false_duration.set(
-                    video_stats["active_false"].get("duration", 0)
-                )
+        # Process each endpoint with a single request
+        for endpoint, metrics_dict in endpoints_map.items():
+            response = api_wrapper.get_stats_for_endpoint(endpoint)
 
-        # Handle biggestchannels (array - get latest/first)
-        biggestchannels = GetMetrics.get_list(
+            # Extract each metric from the response
+            for key_path, gauge in metrics_dict.items():
+                value = api_wrapper.extract_metric(response, key_path)
+                gauge.set(value)
+
+        # Handle array-based endpoints (biggestchannels, downloadhist)
+        biggestchannels = api_wrapper.get_list(
             index_name="/api/stats/biggestchannels/"
         )
         if biggestchannels and len(biggestchannels) > 0:
@@ -297,8 +253,7 @@ class AppMetrics:
                 latest.get("media_size", 0)
             )
 
-        # Handle downloadhist (array - get latest/first)
-        downloadhist = GetMetrics.get_list(
+        downloadhist = api_wrapper.get_list(
             index_name="/api/stats/downloadhist/"
         )
         if downloadhist and len(downloadhist) > 0:

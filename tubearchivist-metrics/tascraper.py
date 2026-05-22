@@ -5,18 +5,19 @@ import requests
 from environment import AppConfig
 
 """
-This is a simple wrapper for the TA API. It is used to get the count of
-videos, channels, and playlists in the TA database. It is also used to get
-the count of videos, channels, and playlists that have been scraped by the
-TA scraper. The TA scraper is a separate process that runs in the
-background and scrapes data from YouTube. The TA API is a RESTful API that
-allows you to access the data in the TA database. The TA API requires an
-API key for authentication. You can get an API key from TA's Application
-Settings.
+This is a simple wrapper for the TA API. It is used to get stats from
+TubeArchivist with efficient single-request-per-endpoint pattern.
 
-# url = "/api/video/<video-id>/"
-# headers = {"Authorization": "Token xxxxxxxxxx"}
-# response = requests.get(url, headers=headers)
+Request structure:
+1. Build request with URL, headers, and timeout
+2. Execute request and check HTTP response status
+3. Parse JSON response
+4. Extract metrics from response
+
+Error handling (in reverse order of processing):
+- Response layer: HTTP status codes
+- Parsing layer: JSON decode errors
+- Application layer: Missing keys in response
 """
 
 
@@ -24,20 +25,35 @@ class APIWrapper:
 
     @staticmethod
     def _make_request(url, headers, timeout=30):
-        """Make a GET request to the TA API."""
+        """
+        Make a GET request to the TA API.
+        Returns: response dict/list or None on error
+        """
         try:
             response = requests.get(url, headers=headers, timeout=timeout)
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            print(f"Request error from {url}: {e}")
+
+            # Response layer: Check HTTP status
+            if response.status_code < 200 or response.status_code >= 300:
+                print(
+                    f"Response error from {url}: "
+                    f"HTTP {response.status_code}"
+                )
+                try:
+                    print(f"Response body: {response.text}")
+                except Exception as e:
+                    print(f"Could not retrieve response body: {e}")
+                return None
+
+            # Parsing layer: Decode JSON
             try:
-                print(f"Response body: {response.text}")
-            except (AttributeError, NameError) as debug_error:
-                print(f"Could not retrieve response body: {debug_error}")
-            return None
-        except ValueError as e:
-            print(f"Error parsing JSON from {url}: {e}")
+                return response.json()
+            except ValueError as e:
+                print(f"JSON parse error from {url}: {e}")
+                return None
+
+        except requests.exceptions.RequestException as e:
+            # Request layer: Connection, timeout, etc.
+            print(f"Request error from {url}: {e}")
             return None
 
     def handle_err(self, error):
@@ -51,64 +67,107 @@ class APIWrapper:
         print("Sleeping for 60 seconds...")
         sleep(60)
 
-    def get_count(self, index_name, keyvalue=None):
-
+    def _get_headers(self):
+        """Build standard API request headers"""
         config = AppConfig().config
         ta_key = config["ta_key"]
-        ta_url = config["ta_url"]
 
-        headers = {
+        return {
             "Authorization": "Token " + ta_key,
             "Accept": "application/json",
         }
 
-        full_url = ta_url + index_name
-        print(f"Full URL: {full_url}")
-        if keyvalue:
-            print(f"Key to extract: {keyvalue}")
+    def get_stats_for_endpoint(self, endpoint):
+        """
+        Make a single request to an endpoint and return the full response.
 
-        jsonreturn = self._make_request(full_url, headers)
+        Args:
+            endpoint: API endpoint path (e.g., "/api/stats/download/")
+
+        Returns:
+            dict or list: Full response from API, None on error
+        """
+        config = AppConfig().config
+        ta_url = config["ta_url"]
+
+        full_url = ta_url + endpoint
+        headers = self._get_headers()
+
+        print(f"Requesting: {full_url}")
+
+        return self._make_request(full_url, headers)
+
+    def extract_metric(self, response, key_path):
+        """
+        Extract a metric from response using dot-notation key path.
+
+        Args:
+            response: Response dict from API
+            key_path: Key or dot-notation path
+                (e.g., "pending" or "type_videos.doc_count")
+
+        Returns:
+            Value or 0 if key not found
+        """
+        if response is None:
+            return 0
+
+        try:
+            keys = key_path.split(".")
+            value = response
+
+            for key in keys:
+                if isinstance(value, dict):
+                    value = value[key]
+                else:
+                    print(f"Cannot traverse key '{key}' in non-dict value")
+                    return 0
+
+            # Handle None values
+            return value if value is not None else 0
+
+        except (KeyError, TypeError) as e:
+            print(f"Key path '{key_path}' not found in response: {e}")
+            return 0
+
+    def get_count(self, index_name, keyvalue=None):
+        """
+        Legacy method for backwards compatibility.
+
+        Args:
+            index_name: API endpoint
+            keyvalue: Key to extract from response
+
+        Returns:
+            Extracted value or 0
+        """
+        response = self.get_stats_for_endpoint(index_name)
 
         if keyvalue is None:
-            # Return full response for nested object handling
-            return jsonreturn
+            return response
 
-        response = 0
-        if jsonreturn is not None:
-            try:
-                response = jsonreturn[keyvalue]
-                if response is None:
-                    response = 0
-            except KeyError as e:
-                print(
-                    f"'{keyvalue}' not found in response from {full_url}: {e}"
-                )
-
-        return response
+        return self.extract_metric(response, keyvalue)
 
     def get_list(self, index_name):
-        """Get list response from API (for endpoints that return arrays)"""
+        """
+        Get list response from API (for endpoints that return arrays).
 
-        config = AppConfig().config
-        ta_key = config["ta_key"]
-        ta_url = config["ta_url"]
+        Args:
+            index_name: API endpoint
 
-        headers = {
-            "Authorization": "Token " + ta_key,
-            "Accept": "application/json",
-        }
-
-        full_url = ta_url + index_name
-        print(f"Full URL: {full_url}")
-
-        response = self._make_request(full_url, headers)
+        Returns:
+            List from response or empty list on error
+        """
+        response = self.get_stats_for_endpoint(index_name)
 
         if response is None:
             return []
 
-        # If it's a list, return it; otherwise return empty list
         if isinstance(response, list):
             return response
 
-        print(f"Expected list from {full_url} but got: {type(response)}")
+        print(
+            f"Expected list from {index_name} "
+            f"but got: {type(response).__name__}"
+        )
         return []
