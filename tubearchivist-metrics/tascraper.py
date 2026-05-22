@@ -49,7 +49,6 @@ class APIWrapper:
 
             getjson = requests.get(
                 ta_url + index_name,
-                params={"query": keyvalue},
                 headers=headers,
                 timeout=30,
             )
