@@ -70,6 +70,6 @@ class APIWrapper:
             and try to get data from the TA API again on the next iteration of
             the loop.
             """
-            print("No values from " + ta_url + index_name + keyvalue)
+            print("No values from " + ta_url + index_name + ": " + keyvalue)
 
         return response
