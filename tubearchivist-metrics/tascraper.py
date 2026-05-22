@@ -1,4 +1,4 @@
-import json
+# import json
 from time import sleep
 
 import requests
@@ -65,7 +65,8 @@ class APIWrapper:
             print(f"Request error from {ta_url}{index_name}: {e}")
         except (KeyError, ValueError) as e:
             print(
-                f"Error parsing response from {ta_url}{index_name} (key '{keyvalue}'): {e}"
+                f"Error parsing response from {ta_url}{index_name} "
+                f"(key '{keyvalue}'): {e}"
             )
         except Exception as e:
             print(f"Unexpected error from {ta_url}{index_name}: {e}")
