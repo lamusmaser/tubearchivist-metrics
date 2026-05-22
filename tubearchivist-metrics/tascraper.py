@@ -81,7 +81,7 @@ class APIWrapper:
                     response = 0
             except KeyError as e:
                 print(
-                    f"Key '{keyvalue}' not found in response from {full_url}: {e}"
+                    f"'{keyvalue}' not found in response from {full_url}: {e}"
                 )
 
         return response

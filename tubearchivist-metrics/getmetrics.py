@@ -4,7 +4,10 @@ from tascraper import APIWrapper
 class GetMetrics:
     @staticmethod
     def count(index_name, keyvalue=None):
-        """Get count of documents from API or full response if keyvalue is None"""
+        """
+        Get count of documents from API
+        or full response if keyvalue is NoneNick6425
+        """
         result = APIWrapper().get_count(index_name, keyvalue)
         return result
 
