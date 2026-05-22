@@ -52,24 +52,22 @@ class APIWrapper:
                 ta_url + index_name, headers=headers, timeout=30
             )
 
-            jsonreturn = json.loads(getjson.content)
+            # Check for HTTP errors
+            getjson.raise_for_status()
+
+            jsonreturn = getjson.json()
 
             response = jsonreturn[keyvalue]
             if response is None:
                 response = 0
 
-        except Exception:
-            """
-            This has turned into a general catch-all for any errors that occur
-            when trying to get data from the TA API due to bad error
-            management. This could be a connection error, a timeout error, a
-            JSON decoding error, or any other error that occurs when trying to
-            get data from the TA API. This is not ideal, but it is better than
-            crashing the entire scraper. The error is logged to the console,
-            and the function returns 0. The scraper will then continue to run
-            and try to get data from the TA API again on the next iteration of
-            the loop.
-            """
-            print("No values from " + ta_url + index_name + ": " + keyvalue)
+        except requests.exceptions.RequestException as e:
+            print(f"Request error from {ta_url}{index_name}: {e}")
+        except (KeyError, ValueError) as e:
+            print(
+                f"Error parsing response from {ta_url}{index_name} (key '{keyvalue}'): {e}"
+            )
+        except Exception as e:
+            print(f"Unexpected error from {ta_url}{index_name}: {e}")
 
         return response
