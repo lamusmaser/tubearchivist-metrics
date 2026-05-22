@@ -1,4 +1,4 @@
-name: Lint, Test, Build, and Push Docker Image
+name: Pre-commit Linting (base)
 
 on:
   push:

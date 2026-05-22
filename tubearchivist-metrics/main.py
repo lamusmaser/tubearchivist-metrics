@@ -15,8 +15,9 @@ print(f'Polling interval (seconds): {config["poll_interval"]}')
 
 
 class AppMetrics:
-    # fmt: off
-    def __init__(self, poll_interval=int(config["poll_interval"])):
+    def __init__(self, poll_interval=None):
+        if poll_interval is None:
+            poll_interval = int(config["poll_interval"])
 
         self.poll_interval = poll_interval
 
@@ -37,7 +38,7 @@ class AppMetrics:
         self.pending_streams = Gauge(
             "yta_pending_streams", "Total number of pending stream downloads"
         )
-        '''
+        """
          These 3 are sub, sub bits of the tree.
          I've done all this in a really hacky way
          that only supports a depth of 1,
@@ -50,10 +51,8 @@ class AppMetrics:
          self.watch_watched = Gauge(
          "yta_watch_watched", "Total number of watched videos"
          )
-        '''
-        self.videos_total = Gauge(
-            "yta_videos_total", "Total number of videos"
-        )
+        """
+        self.videos_total = Gauge("yta_videos_total", "Total number of videos")
 
         self.channel_total = Gauge(
             "yta_channel_total", "Total number of channels"
@@ -87,7 +86,6 @@ class AppMetrics:
             "yta_playlists_unsubscribed",
             "Total number of unsubscribed playlists",
         )
-    # fmt: on
 
     def run_metrics_loop(self):
         """
