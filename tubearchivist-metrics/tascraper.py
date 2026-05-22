@@ -44,12 +44,14 @@ class APIWrapper:
         response = 0
 
         try:
-            # print(ta_url + index_name)
-            # print(keyvalue)
-            # print("-----------------------------------------------")
+            print(f"URL: {ta_url + index_name}")
+            print(f"Query params: {keyvalue}")
 
             getjson = requests.get(
-                ta_url + index_name, headers=headers, timeout=30
+                ta_url + index_name,
+                params={"query": keyvalue},
+                headers=headers,
+                timeout=30,
             )
 
             # Check for HTTP errors
