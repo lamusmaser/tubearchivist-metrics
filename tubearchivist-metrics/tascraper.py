@@ -39,7 +39,10 @@ class APIWrapper:
         ta_key = config["ta_key"]
         ta_url = config["ta_url"]
 
-        headers = {"Authorization": "Token " + ta_key}
+        headers = {
+            "Authorization": "Token " + ta_key,
+            "Accept": "application/json",
+        }
 
         response = 0
 
