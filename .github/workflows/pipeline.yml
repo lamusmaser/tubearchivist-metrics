@@ -1,0 +1,25 @@
+name: Docker Image CI
+
+on:
+    schedule:
+        - cron: '0 0 1 * *'
+    push:
+        branches: [ main ]
+    pull_request:
+        branches: [ main ]
+
+permissions:
+    contents: read
+    id-token: write
+    packages: write
+
+jobs:
+    primary_pipeline:
+        uses: lamusmaser/principal_pipeline_repository/.github/workflows/primary_pipeline.yml@main
+        with:
+            IMAGE_NAME: lamusmaser/tubearchivist-metrics
+        secrets:
+            DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+            DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+            GH_USERNAME: ${{ secrets.GH_USERNAME }}
+            GH_PAT: ${{ secrets.GH_PAT }}
