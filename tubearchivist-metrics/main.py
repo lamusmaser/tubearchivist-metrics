@@ -171,8 +171,40 @@ class AppMetrics:
         """
         Runs a loop that will update the metrics every poll_interval.
         """
+        retry_count = 0
+        max_retries = 5
+        retry_delay = 10  # seconds
+
+        while retry_count < max_retries:
+            try:
+                # Try to get initial metrics
+                self.retrieve_metrics()
+                print("Initial metrics collection successful")
+                break
+            except Exception as e:
+                retry_count += 1
+                if retry_count < max_retries:
+                    print(
+                        f"Metrics collection failed (attempt {retry_count}"
+                        f"/{max_retries}), retrying in {retry_delay}s: {e}"
+                    )
+                    time.sleep(retry_delay)
+                    retry_delay = min(
+                        retry_delay * 2, 60
+                    )  # Exponential backoff, max 60s
+                else:
+                    print(
+                        f"Metrics collection failed after {max_retries} "
+                        f"attempts, continuing anyway: {e}"
+                    )
+
+        # Main loop
         while True:
-            self.retrieve_metrics()
+            try:
+                self.retrieve_metrics()
+            except Exception as e:
+                print(f"Error in metrics collection loop: {e}")
+
             time.sleep(self.poll_interval)
 
     def retrieve_metrics(self):
