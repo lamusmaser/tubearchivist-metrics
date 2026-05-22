@@ -183,6 +183,11 @@ class AppMetrics:
 
         print("Obtaining Metrics from API")
 
+        # Check API health first
+        if not GetMetrics.health_check():
+            print("API health check failed, skipping metrics collection")
+            return
+
         # Define metrics grouped by endpoint to minimize requests
         endpoints_map = {
             "/api/stats/download/": {

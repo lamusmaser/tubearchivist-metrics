@@ -12,6 +12,12 @@ class GetMetrics:
         return GetMetrics._wrapper
 
     @staticmethod
+    def health_check():
+        """Check if TubeArchivist API is healthy"""
+        wrapper = GetMetrics.get_wrapper()
+        return wrapper.health_check()
+
+    @staticmethod
     def count(index_name, keyvalue=None):
         """
         Get count of documents from API

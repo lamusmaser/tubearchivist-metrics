@@ -77,6 +77,40 @@ class APIWrapper:
             "Accept": "application/json",
         }
 
+    def health_check(self):
+        """
+        Check if TubeArchivist API is healthy.
+
+        Returns:
+            True if health check passes, False otherwise
+        """
+        config = AppConfig().config
+        ta_url = config["ta_url"]
+
+        health_url = ta_url + "/api/health/"
+        headers = {"Accept": "*/*"}
+
+        print(f"Health check: {health_url}")
+
+        try:
+            response = requests.get(health_url, headers=headers, timeout=10)
+
+            if response.status_code < 200 or response.status_code >= 300:
+                print(f"Health check failed: HTTP {response.status_code}")
+                return False
+
+            # Check response text for "OK"
+            if response.text.strip() == "OK":
+                print("Health check passed")
+                return True
+            else:
+                print(f"Health check unexpected response: {response.text}")
+                return False
+
+        except requests.exceptions.RequestException as e:
+            print(f"Health check request error: {e}")
+            return False
+
     def get_stats_for_endpoint(self, endpoint):
         """
         Make a single request to an endpoint and return the full response.
