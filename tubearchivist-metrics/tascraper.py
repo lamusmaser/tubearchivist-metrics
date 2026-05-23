@@ -84,8 +84,6 @@ class APIWrapper:
         Returns:
             True if health check passes, False otherwise
         """
-        import socket
-
         config = AppConfig().config
         ta_url = config["ta_url"]
 
@@ -93,24 +91,6 @@ class APIWrapper:
         headers = {"Accept": "*/*"}
 
         print(f"Health check: {health_url}")
-
-        # Extract host and port for diagnostics
-        try:
-            from urllib.parse import urlparse
-
-            parsed = urlparse(ta_url)
-            host = parsed.hostname or "localhost"
-            port = parsed.port or (443 if parsed.scheme == "https" else 80)
-
-            # Test socket connection first
-            print(f"Testing socket connection to {host}:{port}...")
-            sock = socket.create_connection((host, port), timeout=5)
-            sock.close()
-            print(f"Socket connection successful to {host}:{port}")
-        except Exception as sock_error:
-            print(f"Socket connection failed: {sock_error}")
-            print("Unable to connect to TubeArchivist server")
-            return False
 
         try:
             response = requests.get(health_url, headers=headers, timeout=10)
