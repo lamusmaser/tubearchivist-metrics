@@ -88,7 +88,7 @@ class APIWrapper:
         ta_url = config["ta_url"]
 
         health_url = ta_url + "/api/health/"
-        headers = {"Accept": "*/*"}
+        headers = {"Accept": "application/json"}
 
         print(f"Health check: {health_url}")
 
