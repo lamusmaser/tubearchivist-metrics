@@ -20,6 +20,7 @@ class AppMetrics:
             poll_interval = int(config["poll_interval"])
 
         self.poll_interval = poll_interval
+        self.version = None  # Will be set during health check
 
         # Metrics to expose
 
@@ -178,9 +179,16 @@ class AppMetrics:
         while retry_count < max_retries:
             try:
                 # Try to get initial metrics
-                self.retrieve_metrics()
-                print("Initial metrics collection successful")
-                break
+                if GetMetrics.health_check():
+                    # Get version on successful health check
+                    self.version = GetMetrics.ping()
+                    if self.version:
+                        print(f"API version detected: {self.version}")
+                    self.retrieve_metrics()
+                    print("Initial metrics collection successful")
+                    break
+                else:
+                    raise Exception("Health check failed")
             except Exception as e:
                 retry_count += 1
                 if retry_count < max_retries:
@@ -219,6 +227,12 @@ class AppMetrics:
         if not GetMetrics.health_check():
             print("API health check failed, skipping metrics collection")
             return
+
+        # Get version if not already set
+        if self.version is None:
+            self.version = GetMetrics.ping()
+            if self.version:
+                print(f"API version detected: {self.version}")
 
         # Define metrics grouped by endpoint to minimize requests
         endpoints_map = {

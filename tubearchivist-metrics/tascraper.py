@@ -111,6 +111,67 @@ class APIWrapper:
             print(f"Health check request error: {e}")
             return False
 
+    def ping(self):
+        """
+        Test API ping endpoint and extract TubeArchivist version.
+
+        Returns:
+            List of version numbers [major, minor, patch] or None on error
+        """
+        config = AppConfig().config
+        ta_url = config["ta_url"]
+
+        ping_url = ta_url + "/api/ping/"
+        headers = self._get_headers()
+
+        print(f"Ping: {ping_url}")
+
+        try:
+            response = self._make_request(ping_url, headers)
+
+            if response is None:
+                print("Ping request returned no response")
+                return None
+
+            # Check for pong response
+            if response.get("response") != "pong":
+                print(f"Ping response unexpected: {response}")
+                return None
+
+            # Extract and parse version
+            if "version" not in response:
+                print("Ping response missing version field")
+                return None
+
+            version_string = response["version"]
+
+            # Parse version string (e.g., "v0.5.3" or "0.5.3")
+            try:
+                # Strip 'v' prefix if present
+                if isinstance(
+                    version_string, str
+                ) and version_string.startswith("v"):
+                    version_string = version_string[1:]
+
+                # Remove unstable suffix if present
+                if isinstance(version_string, str):
+                    version_string = version_string.rstrip("-unstable")
+
+                # Parse into list of integers
+                version_list = [int(x) for x in version_string.split(".")]
+                version_display = ".".join(str(x) for x in version_list)
+                print(f"TubeArchivist version: {version_display}")
+                return version_list
+            except (AttributeError, TypeError, ValueError) as e:
+                print(
+                    f"Could not parse version string '{version_string}': {e}"
+                )
+                return None
+
+        except Exception as e:
+            print(f"Ping request error: {e}")
+            return None
+
     def get_stats_for_endpoint(self, endpoint):
         """
         Make a single request to an endpoint and return the full response.

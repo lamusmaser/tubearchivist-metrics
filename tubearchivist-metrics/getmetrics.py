@@ -18,6 +18,12 @@ class GetMetrics:
         return wrapper.health_check()
 
     @staticmethod
+    def ping():
+        """Get TubeArchivist version via ping endpoint"""
+        wrapper = GetMetrics.get_wrapper()
+        return wrapper.ping()
+
+    @staticmethod
     def count(index_name, keyvalue=None):
         """
         Get count of documents from API
