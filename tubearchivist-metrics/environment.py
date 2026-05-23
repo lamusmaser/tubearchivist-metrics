@@ -18,8 +18,14 @@ class AppConfig:
 
         ta_key = os.environ.get("TA_KEY")
         ta_url = os.environ.get("TA_URL")
-        listen_port = os.environ.get("LISTEN_PORT", default="9934")
-        poll_interval = os.environ.get("POLL_INTERVAL", default="120")
+        listen_port = os.environ.get("LISTEN_PORT", "9934")
+        poll_interval = os.environ.get("POLL_INTERVAL", "120")
+
+        # Validate required configuration
+        if not ta_url:
+            raise ValueError("TA_URL environment variable is required")
+        if not ta_key:
+            raise ValueError("TA_KEY environment variable is required")
 
         application = {
             "ta_key": ta_key,
