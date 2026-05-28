@@ -99,8 +99,9 @@ class APIWrapper:
                 print(f"Health check failed: HTTP {response.status_code}")
                 return False
 
-            # Check response text for "OK"
-            if response.text.strip() == "OK":
+            # Check response text for "OK" (handles both "OK" and plain OK)
+            response_text = response.text.strip()
+            if response_text == "OK" or response_text == '"OK"':
                 print("Health check passed")
                 return True
             else:
