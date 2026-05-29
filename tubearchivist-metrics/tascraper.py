@@ -216,7 +216,11 @@ class APIWrapper:
                 if isinstance(value, dict):
                     value = value[key]
                 else:
-                    print(f"Cannot traverse key '{key}' in non-dict value")
+                    print(
+                        f"Cannot traverse key '{key}' in non-dict value. "
+                        f"Current value type: {type(value).__name__}, "
+                        f"value: {value}"
+                    )
                     return 0
 
             # Handle None values

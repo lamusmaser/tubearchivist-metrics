@@ -314,6 +314,8 @@ class AppMetrics:
                 latest.get("media_size", 0)
             )
 
+        print("Metrics collection completed successfully")
+
 
 def main():
     """Main Entry Point"""
