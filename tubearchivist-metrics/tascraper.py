@@ -225,7 +225,20 @@ class APIWrapper:
 
             for key in keys:
                 if isinstance(value, dict):
+                    # Check if key exists before accessing
+                    if key not in value:
+                        print(
+                            f"Key '{key}' not found in path '{key_path}'. "
+                            f"Available keys: {list(value.keys())}"
+                        )
+                        return 0
                     value = value[key]
+                    # Handle None values mid-traversal
+                    if value is None:
+                        print(
+                            f"Key '{key}' in path '{key_path}' has None value"
+                        )
+                        return 0
                 else:
                     print(
                         f"Cannot traverse key '{key}' in non-dict value. "
@@ -234,8 +247,11 @@ class APIWrapper:
                     )
                     return 0
 
-            # Handle None values
-            return value if value is not None else 0
+            # Handle final None value
+            if value is None:
+                return 0
+
+            return value
 
         except (KeyError, TypeError) as e:
             print(f"Key path '{key_path}' not found in response: {e}")
