@@ -232,8 +232,8 @@ class APIWrapper:
                     # Handle None values mid-traversal
                     if value is None:
                         print(
-                            f"Key '{key}' in path '{key_path}' has None value. "
-                            f"Available keys: {list(response.keys())}"
+                            f"Key '{key}' in path '{key_path}' has None value."
+                            f" Available keys: {list(response.keys())}"
                         )
                         return 0
                 else:
