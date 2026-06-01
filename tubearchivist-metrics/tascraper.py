@@ -196,7 +196,13 @@ class APIWrapper:
 
         print(f"Requesting: {full_url}")
 
-        return self._make_request(full_url, headers)
+        response = self._make_request(full_url, headers)
+
+        # Debug: Show response structure for dict responses
+        if response and isinstance(response, dict):
+            print(f"Response keys: {list(response.keys())}")
+
+        return response
 
     def extract_metric(self, response, key_path):
         """
