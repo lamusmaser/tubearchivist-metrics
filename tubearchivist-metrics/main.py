@@ -221,11 +221,15 @@ class AppMetrics:
         Makes one request per endpoint and extracts all associated metrics.
         """
 
-        print("Obtaining Metrics from API")
+        print(
+            f"{time.strftime('%Y-%m-%d %H:%M:%S')}| Obtaining Metrics from API"
+        )
 
         # Check API health first
         if not GetMetrics.health_check():
-            print("API health check failed, skipping metrics collection")
+            print(
+                f"{time.strftime('%Y-%m-%d %H:%M:%S')}| API health check failed, skipping metrics collection"  # noqa: E501
+            )
             return
 
         # Get version if not already set
@@ -314,7 +318,9 @@ class AppMetrics:
                 latest.get("media_size", 0)
             )
 
-        print("Metrics collection completed successfully")
+        print(
+            f"{time.strftime('%Y-%m-%d %H:%M:%S')}| Metrics collection completed successfully"  # noqa: E501
+        )
 
 
 def main():
