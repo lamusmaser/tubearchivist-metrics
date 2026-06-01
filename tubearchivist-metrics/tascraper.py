@@ -254,6 +254,33 @@ class APIWrapper:
             print(f"Key path '{key_path}' not found in response: {e}")
             return 0
 
+    def is_metric_missing(self, response, key_path):
+        """
+        Check if a metric is missing or None in the response.
+
+        Args:
+            response: Response dict from API
+            key_path: Key or dot-notation path
+
+        Returns:
+            True if metric is missing or None, False otherwise
+        """
+        if response is None or not isinstance(response, dict):
+            return True
+
+        keys = key_path.split(".")
+        current = response
+
+        for key in keys:
+            if isinstance(current, dict):
+                if key not in current:
+                    return True
+                current = current.get(key)
+            else:
+                return True
+
+        return current is None
+
     def get_count(self, index_name, keyvalue=None):
         """
         Legacy method for backwards compatibility.

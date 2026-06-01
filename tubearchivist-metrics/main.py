@@ -15,6 +15,63 @@ print(f'Polling interval (seconds): {config["poll_interval"]}')
 
 
 class AppMetrics:
+    # Endpoint configuration mapping endpoint name to path and metrics
+    ENDPOINTS_MAP = {
+        "download": {
+            "path": "/api/stats/download/",
+            "metrics": {
+                "pending": "pending_downloads",
+                "ignore": "ignore_downloads",
+                "pending_videos": "pending_videos",
+                "pending_shorts": "pending_shorts",
+                "pending_streams": "pending_streams",
+            },
+        },
+        "video": {
+            "path": "/api/stats/video/",
+            "metrics": {
+                "doc_count": "videos_total",
+                "media_size": "videos_media_size",
+                "duration": "videos_duration",
+                "type_videos.doc_count": "videos_type_videos_count",
+                "type_videos.media_size": "videos_type_videos_media_size",
+                "type_videos.duration": "videos_type_videos_duration",
+                "type_shorts.doc_count": "videos_type_shorts_count",
+                "type_shorts.media_size": "videos_type_shorts_media_size",
+                "type_shorts.duration": "videos_type_shorts_duration",
+                "type_streams.doc_count": "videos_type_streams_count",
+                "type_streams.media_size": "videos_type_streams_media_size",
+                "type_streams.duration": "videos_type_streams_duration",
+                "active_true.doc_count": "videos_active_true_count",
+                "active_true.media_size": "videos_active_true_media_size",
+                "active_true.duration": "videos_active_true_duration",
+                "active_false.doc_count": "videos_active_false_count",
+                "active_false.media_size": "videos_active_false_media_size",
+                "active_false.duration": "videos_active_false_duration",
+            },
+        },
+        "channel": {
+            "path": "/api/stats/channel/",
+            "metrics": {
+                "doc_count": "channel_total",
+                "active_true": "channel_active",
+                "active_false": "channel_inactive",
+                "subscribed_true": "channel_subscribed",
+                "subscribed_false": "channel_unsubscribed",
+            },
+        },
+        "playlist": {
+            "path": "/api/stats/playlist/",
+            "metrics": {
+                "doc_count": "playlists_total",
+                "active_true": "playlists_active",
+                "active_false": "playlists_inactive",
+                "subscribed_true": "playlists_subscribed",
+                "subscribed_false": "playlists_unsubscribed",
+            },
+        },
+    }
+
     def __init__(self, poll_interval=None):
         if poll_interval is None:
             poll_interval = int(config["poll_interval"])
@@ -168,6 +225,74 @@ class AppMetrics:
             "Latest download history media size",
         )
 
+        # Health metrics per endpoint
+        self.endpoint_health = {}
+        self.endpoint_names = [
+            "download",
+            "video",
+            "channel",
+            "playlist",
+        ]
+        for endpoint_name in self.endpoint_names:
+            self.endpoint_health[endpoint_name] = Gauge(
+                f"yta_endpoint_{endpoint_name}_unavailable",
+                f"Number of unavailable metrics from {endpoint_name} endpoint",
+            )
+
+    def _get_gauge(self, gauge_name):
+        """Get gauge object by attribute name."""
+        return getattr(self, gauge_name)
+
+    def _get_endpoint_metrics(self, endpoint_name):
+        """
+        Get the actual gauge objects for an endpoint's metrics.
+
+        Args:
+            endpoint_name: Name of endpoint (e.g., "video")
+
+        Returns:
+            dict: Mapping of key_path to gauge objects
+        """
+        endpoint_config = self.ENDPOINTS_MAP[endpoint_name]
+        metrics_dict = {}
+
+        for key_path, gauge_attr in endpoint_config["metrics"].items():
+            metrics_dict[key_path] = self._get_gauge(gauge_attr)
+
+        return metrics_dict
+
+    def _process_array_endpoints(self, api_wrapper):
+        """
+        Process array-based endpoints (biggestchannels, downloadhist).
+
+        Args:
+            api_wrapper: APIWrapper instance
+        """
+        # Handle biggestchannels
+        biggestchannels = api_wrapper.get_list(
+            index_name="/api/stats/biggestchannels/"
+        )
+        if biggestchannels and len(biggestchannels) > 0:
+            latest = biggestchannels[0]
+            self.biggest_channels_latest_count.set(latest.get("doc_count", 0))
+            self.biggest_channels_latest_duration.set(
+                latest.get("duration", 0)
+            )
+            self.biggest_channels_latest_media_size.set(
+                latest.get("media_size", 0)
+            )
+
+        # Handle downloadhist
+        downloadhist = api_wrapper.get_list(
+            index_name="/api/stats/downloadhist/"
+        )
+        if downloadhist and len(downloadhist) > 0:
+            latest = downloadhist[0]
+            self.downloadhist_latest_count.set(latest.get("count", 0))
+            self.downloadhist_latest_media_size.set(
+                latest.get("media_size", 0)
+            )
+
     def run_metrics_loop(self):
         """
         Runs a loop that will update the metrics every poll_interval.
@@ -238,89 +363,48 @@ class AppMetrics:
             if self.version:
                 print(f"API version detected: {self.version}")
 
-        # Define metrics grouped by endpoint to minimize requests
-        endpoints_map = {
-            "/api/stats/download/": {
-                "pending": self.pending_downloads,
-                "ignore": self.ignore_downloads,
-                "pending_videos": self.pending_videos,
-                "pending_shorts": self.pending_shorts,
-                "pending_streams": self.pending_streams,
-            },
-            "/api/stats/video/": {
-                "doc_count": self.videos_total,
-                "media_size": self.videos_media_size,
-                "duration": self.videos_duration,
-                "type_videos.doc_count": self.videos_type_videos_count,
-                "type_videos.media_size": self.videos_type_videos_media_size,
-                "type_videos.duration": self.videos_type_videos_duration,
-                "type_shorts.doc_count": self.videos_type_shorts_count,
-                "type_shorts.media_size": self.videos_type_shorts_media_size,
-                "type_shorts.duration": self.videos_type_shorts_duration,
-                "type_streams.doc_count": self.videos_type_streams_count,
-                "type_streams.media_size": self.videos_type_streams_media_size,
-                "type_streams.duration": self.videos_type_streams_duration,
-                "active_true.doc_count": self.videos_active_true_count,
-                "active_true.media_size": self.videos_active_true_media_size,
-                "active_true.duration": self.videos_active_true_duration,
-                "active_false.doc_count": self.videos_active_false_count,
-                "active_false.media_size": self.videos_active_false_media_size,
-                "active_false.duration": self.videos_active_false_duration,
-            },
-            "/api/stats/channel/": {
-                "doc_count": self.channel_total,
-                "active_true": self.channel_active,
-                "active_false": self.channel_inactive,
-                "subscribed_true": self.channel_subscribed,
-                "subscribed_false": self.channel_unsubscribed,
-            },
-            "/api/stats/playlist/": {
-                "doc_count": self.playlists_total,
-                "active_true": self.playlists_active,
-                "active_false": self.playlists_inactive,
-                "subscribed_true": self.playlists_subscribed,
-                "subscribed_false": self.playlists_unsubscribed,
-            },
-        }
-
         api_wrapper = GetMetrics.get_wrapper()
 
-        # Process each endpoint with a single request
-        for endpoint, metrics_dict in endpoints_map.items():
-            response = api_wrapper.get_stats_for_endpoint(endpoint)
+        # Process each endpoint
+        for endpoint_name in self.endpoint_names:
+            self._process_endpoint(api_wrapper, endpoint_name)
 
-            # Extract each metric from the response
-            for key_path, gauge in metrics_dict.items():
-                value = api_wrapper.extract_metric(response, key_path)
-                gauge.set(value)
-
-        # Handle array-based endpoints (biggestchannels, downloadhist)
-        biggestchannels = api_wrapper.get_list(
-            index_name="/api/stats/biggestchannels/"
-        )
-        if biggestchannels and len(biggestchannels) > 0:
-            latest = biggestchannels[0]
-            self.biggest_channels_latest_count.set(latest.get("doc_count", 0))
-            self.biggest_channels_latest_duration.set(
-                latest.get("duration", 0)
-            )
-            self.biggest_channels_latest_media_size.set(
-                latest.get("media_size", 0)
-            )
-
-        downloadhist = api_wrapper.get_list(
-            index_name="/api/stats/downloadhist/"
-        )
-        if downloadhist and len(downloadhist) > 0:
-            latest = downloadhist[0]
-            self.downloadhist_latest_count.set(latest.get("count", 0))
-            self.downloadhist_latest_media_size.set(
-                latest.get("media_size", 0)
-            )
+        # Process array-based endpoints
+        self._process_array_endpoints(api_wrapper)
 
         print(
             f"{time.strftime('%Y-%m-%d %H:%M:%S')}| Metrics collection completed successfully"  # noqa: E501
         )
+
+    def _process_endpoint(self, api_wrapper, endpoint_name):
+        """
+        Process a single endpoint and update its metrics.
+
+        Args:
+            api_wrapper: APIWrapper instance
+            endpoint_name: Name of endpoint (e.g., "video")
+        """
+        endpoint_config = self.ENDPOINTS_MAP[endpoint_name]
+        endpoint_path = endpoint_config["path"]
+        metrics_dict = self._get_endpoint_metrics(endpoint_name)
+        unavailable_count = 0
+
+        response = api_wrapper.get_stats_for_endpoint(endpoint_path)
+
+        # Extract each metric from the response
+        for key_path, gauge in metrics_dict.items():
+            value = api_wrapper.extract_metric(response, key_path)
+
+            # Check if this metric is missing/unavailable
+            if value == 0 and api_wrapper.is_metric_missing(
+                response, key_path
+            ):
+                unavailable_count += 1
+
+            gauge.set(value)
+
+        # Update endpoint health metric
+        self.endpoint_health[endpoint_name].set(unavailable_count)
 
 
 def main():
