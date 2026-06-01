@@ -47,12 +47,12 @@ class APIWrapper:
             # Parsing layer: Decode JSON
             try:
                 json_response = response.json()
-                print(
-                    f"Response received from {url}: {type(json_response).__name__}"  # noqa: E501 # Covering troubleshooting issue.
-                )
                 return json_response
             except ValueError as e:
                 print(f"JSON parse error from {url}: {e}")
+                print(
+                    f"Response received from {url}: {type(response.text).__name__}"  # noqa: E501
+                )
                 print(f"Response text: {response.text}")
                 return None
 
@@ -197,10 +197,6 @@ class APIWrapper:
         print(f"Requesting: {full_url}")
 
         response = self._make_request(full_url, headers)
-
-        # Debug: Show response structure for dict responses
-        if response and isinstance(response, dict):
-            print(f"Response keys: {list(response.keys())}")
 
         return response
 
