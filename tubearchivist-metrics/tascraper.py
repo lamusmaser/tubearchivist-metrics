@@ -46,9 +46,14 @@ class APIWrapper:
 
             # Parsing layer: Decode JSON
             try:
-                return response.json()
+                json_response = response.json()
+                print(
+                    f"Response received from {url}: {type(json_response).__name__}"  # noqa: E501 # Covering troubleshooting issue.
+                )
+                return json_response
             except ValueError as e:
                 print(f"JSON parse error from {url}: {e}")
+                print(f"Response text: {response.text}")
                 return None
 
         except requests.exceptions.RequestException as e:
