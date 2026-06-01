@@ -210,10 +210,12 @@ class APIWrapper:
                 (e.g., "pending" or "type_videos.doc_count")
 
         Returns:
-            Value or 0 if key not found
+            Tuple of (value, was_missing) where:
+            - value: extracted value or 0 if not found
+            - was_missing: True if metric was unavailable/None, False otherwise
         """
         if response is None:
-            return 0
+            return 0, True
 
         try:
             keys = key_path.split(".")
@@ -227,59 +229,32 @@ class APIWrapper:
                             f"Key '{key}' not found in path '{key_path}'. "
                             f"Available keys: {list(value.keys())}"
                         )
-                        return 0
+                        return 0, True
                     value = value[key]
                     # Handle None values mid-traversal
                     if value is None:
                         print(
-                            f"Key '{key}' in path '{key_path}' has None value."
-                            f" Available keys: {list(response.keys())}"
+                            f"Cannot extract '{key_path}': "
+                            f"Key '{key}' is None, cannot traverse to nested keys."  # noqa: E501
                         )
-                        return 0
+                        return 0, True
                 else:
                     print(
                         f"Cannot traverse key '{key}' in non-dict value. "
                         f"Current value type: {type(value).__name__}, "
                         f"value: {value}"
                     )
-                    return 0
+                    return 0, True
 
             # Handle final None value
             if value is None:
-                return 0
+                return 0, True
 
-            return value
+            return value, False
 
         except (KeyError, TypeError) as e:
             print(f"Key path '{key_path}' not found in response: {e}")
-            return 0
-
-    def is_metric_missing(self, response, key_path):
-        """
-        Check if a metric is missing or None in the response.
-
-        Args:
-            response: Response dict from API
-            key_path: Key or dot-notation path
-
-        Returns:
-            True if metric is missing or None, False otherwise
-        """
-        if response is None or not isinstance(response, dict):
-            return True
-
-        keys = key_path.split(".")
-        current = response
-
-        for key in keys:
-            if isinstance(current, dict):
-                if key not in current:
-                    return True
-                current = current.get(key)
-            else:
-                return True
-
-        return current is None
+            return 0, True
 
     def get_count(self, index_name, keyvalue=None):
         """

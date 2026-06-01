@@ -393,12 +393,10 @@ class AppMetrics:
 
         # Extract each metric from the response
         for key_path, gauge in metrics_dict.items():
-            value = api_wrapper.extract_metric(response, key_path)
+            value, was_missing = api_wrapper.extract_metric(response, key_path)
 
-            # Check if this metric is missing/unavailable
-            if value == 0 and api_wrapper.is_metric_missing(
-                response, key_path
-            ):
+            # Track metrics that are unavailable
+            if was_missing:
                 unavailable_count += 1
 
             gauge.set(value)
